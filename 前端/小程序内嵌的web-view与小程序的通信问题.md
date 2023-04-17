@@ -81,26 +81,26 @@
 
   web-view 页面：
 
-  ```ts
-     <template>
+  ```html
+    <template>
       <div>
         <button @click="handlePostMessageToApplet">postMessageToApplet</button>
       </div>
     </template>
     <script lang="ts">
-      import { defineComponent } from 'vue';
-      export default defineComponent({
-        setup() {
-          function handlePostMessageToApplet() {
-            if (typeof wx !== undefined) {
-                wx.miniProgram.postMessage({ data: "这是一条测试示例数据" });
+        import { defineComponent } from 'vue';
+        export default defineComponent({
+          setup() {
+            function handlePostMessageToApplet() {
+              if (typeof wx !== undefined) {
+                  wx.miniProgram.postMessage({ data: "这是一条测试示例数据" });
+                }
               }
+            return {
+              handleJumpApplet
             }
-          return {
-            handleJumpApplet
           }
-        }
-      });
+        });
     </script>
   ```
 
