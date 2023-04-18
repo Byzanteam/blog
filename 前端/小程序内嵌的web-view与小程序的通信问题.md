@@ -12,26 +12,26 @@
 3. 使用示例：
 
    ```html
-    <template>
-      <div>
-        <button @click="handleJumpApplet">JumpApplet</button>
-      </div>
-    </template>
-    <script lang="ts">
-      import { defineComponent } from 'vue';
-      export default defineComponent({
-        setup() {
-          function handleJumpApplet() {
-            if (typeof wx !== undefined) {
-              wx.miniProgram.navigateTo({ url: "/pages/mobile/view/index" });
+      <template>
+        <div>
+          <button @click="handleJumpApplet">JumpApplet</button>
+        </div>
+      </template>
+      <script lang="ts">
+        import { defineComponent } from 'vue';
+        export default defineComponent({
+          setup() {
+            function handleJumpApplet() {
+              if (typeof wx !== undefined) {
+                wx.miniProgram.navigateTo({ url: "/pages/mobile/view/index" });
               }
             }
-          return {
-            handleJumpApplet
+            return {
+              handleJumpApplet
+            }
           }
-        }
-      });
-    </script>
+        });
+      </script>
    ```
 
 ## 由此引发小程序与 web-view 通信问题
@@ -43,7 +43,7 @@
     小程序端：
 
     ```html
-       <web-view src="https://example.com?param1=value1&param2=value2"></web-view>
+      <web-view src="https://example.com?param1=value1&param2=value2"></web-view>
     ```
 
     web-view 页面 解析路由参数即可获得参数
@@ -60,8 +60,9 @@
    2. 不够灵活：src 属性携带参数的方式只能传输简单的数据类型，例如字符串、数字等，无法传输复杂的数据类型，例如对象、函数等
    3. 安全性风险：URL 参数传递通信的安全性依赖于参数的加密和签名等措施，如果这些措施不够严密，就可能存在安全漏洞，被攻击者利用进行攻击，因为 URL 参数传递通信中的参数是明文传递的，攻击者可以通过截取网络数据包的方式，获取参数的信息，进而了解通信双方的业务逻辑和敏感信息
 
-### 通信方案二：wx.miniProgram.postMessage({xxx:xxx}) 和 bindmessage 属性（web-view 向小程序传递消息）
+### 通信方案二：wx.miniProgram.postMessage({data: xxx}) 和 bindmessage 属性（web-view 向小程序传递消息）
 
+* 注意：使用 wx.miniProgram.postMessage({data: xxx})，其中按照 data 为属性名，xxx 属性值可以为字符串、对象、数组等
 * web-view 将信息发送给小程序，由小程序内部监听信息，监听到信息后由小程序主动做出响应
 * 使用示例：
 
@@ -71,7 +72,7 @@
     <web-view src="https://example.com" bindmessage="onMessage"></web-view>
   ```
 
-  ```ts
+  ```js
     onMessage: function(event) {
       console.log(event.data); // "这是一条测试示例数据"
     }
@@ -86,31 +87,31 @@
       </div>
     </template>
     <script lang="ts">
-        import { defineComponent } from 'vue';
-        export default defineComponent({
-          setup() {
-            function handlePostMessageToApplet() {
-              if (typeof wx !== undefined) {
-                  wx.miniProgram.postMessage({ data: "这是一条测试示例数据" });
-                 /**
-                  * 注意：不能使用 window.postMessage 触发 web-view 的 bindmessage
-                  * 因为：
-                  * 1. window.postMessage 方法可以用于在跨域的 iframe 或者跨域的窗口之间传递消息，且它是 HTML5 的 API
-                  * 2. web-view 网页与小程序之间不支持除 JSSDK 提供的接口之外的通信
-                  */
-                }
-              }
-            return {
-              handleJumpApplet
+      import { defineComponent } from 'vue';
+      export default defineComponent({
+        setup() {
+          function handlePostMessageToApplet() {
+            if (typeof wx !== undefined) {
+              /**
+              * 注意：不能使用 window.postMessage 触发 web-view 的 bindmessage
+              * 因为：
+              * 1. window.postMessage 方法可以用于在跨域的 iframe 或者跨域的窗口之间传递消息，且它是 HTML5 的 API
+              * 2. web-view 网页与小程序之间不支持除 JSSDK 提供的接口之外的通信
+              */
+              wx.miniProgram.postMessage({ data: "这是一条测试示例数据" });
             }
           }
-        });
+          return {
+            handleJumpApplet
+          }
+        }
+      });
     </script>
   ```
 
 1. 优点：
    1. 灵活性：可以自由定义传递的数据内容和格式，通信双方可以根据自己的需要进行自由的数据传递和解析
-   2. 效率高：使用 wx.miniProgram.postMessage({xxx:xxx}) 和 bindmessage 属性进行通信时，数据传输的效率相对较高，通信双方可以实现高效的数据传递和响应，同时也可以避免 URL 参数传递通信中的参数长度限制的问题
+   2. 效率高：使用 wx.miniProgram.postMessage({data:xxx}) 和 bindmessage 属性进行通信时，数据传输的效率相对较高，通信双方可以实现高效的数据传递和响应，同时也可以避免 URL 参数传递通信中的参数长度限制的问题
 2. 缺点：
    1. 使用 wx.miniProgram.postMessage 方法需要进行一些复杂的配置，需要在微信公众号中进行认证等操作
    2. 为什么需要考虑 web-view 页面和小程序之间的安全性问题？
@@ -121,11 +122,12 @@
    3. wx.miniProgram.postMessage 方法为什么可能会增加 web-view 页面的加载时间？
       答：当使用 wx.miniProgram.postMessage 方法向 web-view 组件发送消息时，需要经过以下几个步骤：
         1. 调用 wx.miniProgram.postMessage 方法将消息发送给 web-view 组件
-        2. web-view 组件的 `JavaScript` 上下文接收到消息后，将消息转发给 webview 进程
-        3. webview 进程接收到消息后，将消息转发给浏览器进程
+        2. web-view 组件的 `JavaScript` 上下文接收到消息后，将消息转发给 web-view 进程
+        3. web-view 进程接收到消息后，将消息转发给浏览器进程
         4. 浏览器进程接收到消息后，将消息传递给 web-view 组件的 `JavaScript` 上下文，触发 message 事件
       * 综上可得：消息需要经过多个进程之间的传递，所以可能会增加 web-view 页面的加载时间。但是，具体是否会增加页面加载时间，取决于消息的大小和网络延迟等因素。如果消息很小且网络延迟较低，那么增加的时间非常短暂。但如果消息较大或者网络延迟较高，那么增加的时间可能会比较明显
-      * 注意：在小程序中，web-view 组件是通过浏览器内核来渲染网页内容的，因此也需要涉及到浏览器进程和渲染进程
+      * [为什么有网络通信请看这里](https://developers.weixin.qq.com/ebook?action=get_post_info&docid=000e22a89849d81b0086384a25b40a&highline=WebView)
+      * 注意：在小程序中，[web-view 是按照普通网页来渲染网页内容的](https://developers.weixin.qq.com/ebook?action=get_post_info&docid=000e22a89849d81b0086384a25b40a&highline=WebView)
 
 ## 知识不迷路
 
@@ -137,4 +139,5 @@
 ## 相关文档
 
 * [web-view 文档](https://developers.weixin.qq.com/miniprogram/dev/component/web-view.html)
+* [小程序开发指南](https://developers.weixin.qq.com/ebook?action=get_post_info&docid=0004eec99acc808b00861a5bd5280a)
 * 拓展：[第三方静态网站 H5 跳转小程序](https://developers.weixin.qq.com/miniprogram/dev/wxcloud/guide/staticstorage/jump-miniprogram.html)
